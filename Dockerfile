@@ -1,6 +1,9 @@
 FROM python:3.12.3
 USER root
 
+ENV PORT 8501
+ENV HOST 0.0.0.0
+
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -25,11 +28,11 @@ RUN pip3 install --upgrade pip && \
 
 WORKDIR /streamlit-app
 
-EXPOSE 8501
+EXPOSE ${PORT}
 
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
 COPY tags_replaced.csv TTS/
 COPY web.py .
 
-ENTRYPOINT ["streamlit", "run", "web.py" , "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["sh","-c","streamlit", "run", "web.py" , "--server.port {$PORT}", "--server.address ${HOST}"]
