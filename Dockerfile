@@ -10,9 +10,17 @@ RUN apt-get update && \
     portaudio19-dev \ 
     python3-pyaudio
 
-RUN git clone https://github.com/davidgao7/museum-tour-guide.git streamlit-app/ && \
-    pip3 install --upgrade pip && \
-    pip3 install -r requirements.txt && \
+RUN pip3 install --upgrade pip && \
+    pip3 install pyaudio==0.2.14 \
+    openai==1.37.1 \
+    langchain==0.2.6 \
+    langchain-community==0.2.1 \
+    langchain-core==0.2.23 \
+    langchain-experimental==0.0.59 \
+    langchain-openai==0.1.13 \
+    langchain-text-splitters==0.2.0 \
+    streamlit==1.36.0 \
+    streamlit-audiorecorder==0.0.5 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /streamlit-app
