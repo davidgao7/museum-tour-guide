@@ -1,21 +1,30 @@
 import os
-# from dotenv import load_dotenv
-
-# from langchain.agents.agent_types import AgentType
-# from langchain.agents import Agent
 from langchain_experimental.agents.agent_toolkits import (
     create_csv_agent,
     # create_pandas_dataframe_agent,
 )
-
-# from langchain.tools import BaseTool, tool, StructuredTool
 from langchain_openai import ChatOpenAI
-
 from langchain_core.output_parsers.string import StrOutputParser
 from langchain.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.passthrough import RunnablePassthrough
+import streamlit as st
+
+key = st.text_input("Enter your OpenAI API key", type="password")
+if key:
+    os.environ["OPENAI_API_KEY"] = key
+    st.write("API key set successfully!")
+else:
+    st.stop()
+
+# from dotenv import load_dotenv
+
+# from langchain.agents.agent_types import AgentType
+# from langchain.agents import Agent
+
+# from langchain.tools import BaseTool, tool, StructuredTool
+
 
 # from langchain_core.prompts.image import ImagePromptTemplate
-from langchain_core.runnables.passthrough import RunnablePassthrough
 
 # from langchain_community.document_loaders.csv_loader import CSVLoader
 # from langchain.callbacks.base import BaseCallbackHandler

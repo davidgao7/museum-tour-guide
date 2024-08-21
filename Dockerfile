@@ -18,5 +18,5 @@ RUN apt-get update -y && \
 WORKDIR streamlit-app/
 COPY api.py web.py streamlit-app/
 
-EXPOSE 8080
-ENTRYPOINT ["streamlit", "run", "web.py", "--server.port 8080"]
+EXPOSE 8501
+ENTRYPOINT ["streamlit", "run", "web.py" ]

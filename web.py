@@ -24,11 +24,6 @@ import openai
 from openai import OpenAI
 import os
 
-key = st.text_input("Enter your OpenAI API key", type="password")
-if key:
-    os.environ["OPENAI_API_KEY"] = key
-    st.write("API key set successfully!")
-
 
 # def get_response(input_text, stream=False):
 #     print("===========in get_response===================")
