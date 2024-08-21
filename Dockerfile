@@ -1,8 +1,8 @@
 FROM python:3.12.3
 USER root
 
-ENV PORT 8501
-ENV HOST 0.0.0.0
+ENV PORT=8501
+ENV HOST=0.0.0.0
 
 RUN apt-get update && \
     apt-get install -y \
@@ -35,4 +35,4 @@ HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 COPY tags_replaced.csv TTS/
 COPY web.py .
 
-ENTRYPOINT ["sh","-c","streamlit", "run", "web.py" , "--server.port {$PORT}", "--server.address ${HOST}"]
+ENTRYPOINT ["sh", "-c", "streamlit run web.py --server.port ${PORT} --server.address ${HOST}"]
