@@ -1,0 +1,6 @@
+build-essential
+curl
+software-properties-common
+git
+portaudio19-dev
+python3-pyaudio
