@@ -1,5 +1,4 @@
 build-essential
 curl
 software-properties-common
-portaudio19-dev
-python3-pyaudio
+ffmpeg
