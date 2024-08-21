@@ -19,7 +19,6 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 import time
 from pathlib import Path
-import pyaudio
 import openai
 from openai import OpenAI
 import os
