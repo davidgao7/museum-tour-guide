@@ -1,8 +1,6 @@
 FROM python:3.12.3
 USER root
 
-WORKDIR streamlit-app/
-
 RUN apt-get update && \
     apt-get install -y \
     build-essential \
@@ -10,12 +8,14 @@ RUN apt-get update && \
     software-properties-common \
     git \
     portaudio19-dev \ 
-    python3-pyaudio && \
+    python3-pyaudio
+
+RUN git clone https://github.com/davidgao7/museum-tour-guide.git streamlit-app/ && \
     pip3 install --upgrade pip && \
     pip3 install -r requirements.txt && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/davidgao7/museum-tour-guide.git streamlit-app
+WORKDIR /streamlit-app
 
 EXPOSE 8501
 
