@@ -22,4 +22,6 @@
 - [x] The tour guide is able to understand/remember the context of the conversation.
 - [x] Interrupt the tour guide at any time by clicking on the stop audio button
 
+## App overview
+
 ![](App.png)
