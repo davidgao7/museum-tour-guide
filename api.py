@@ -11,8 +11,22 @@ from langchain.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceh
 from langchain_core.runnables.passthrough import RunnablePassthrough
 from langchain_core.runnables import RunnableLambda
 from langsmith import Client
+from langchain.callbacks import LangChainTracer
+
 from dotenv import load_dotenv
+
 load_dotenv()
+# enable tracing when debugging
+callbacks = [
+    LangChainTracer(
+        project_name="AI Voice Tour",
+        client=Client(
+            api_url=os.getenv("LANGCHAIN_ENDPOINT"),
+            api_key=os.getenv("LANGCHAIN_API_KEY"),
+        ),
+    )
+]
+
 
 key = st.text_input("Enter your OpenAI API key", type="password")
 if key:
