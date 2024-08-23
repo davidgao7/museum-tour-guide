@@ -5,7 +5,7 @@
 # Openai batch api: https://platform.openai.com/docs/guides/batch/overview
 # some project links: https://www.notion.so/seemuseums/dd751e1dc0ee40228d5675f1b28925e4?pvs=4
 
-from api import data_conversation_chatbot_chain
+from api import data_conversation_chatbot_chain, callbacks
 from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
 from langchain_core.messages import AIMessage, HumanMessage
 import streamlit as st
@@ -101,7 +101,6 @@ for msg in chat_history.messages:
     st.chat_message(msg.type).write(msg.content)
 
 
-config = {"configurable": {"session_id": "any"}}
 # print(result)
 
 # audio record
@@ -158,16 +157,22 @@ with st.chat_message("AI"):
     with st.spinner("Thinking..."):
         response = data_conversation_chatbot_chain.invoke(
             {"input": input_text, "chat_history": st.session_state.chat_history},
-            config,
+            config={"configurable": {"session_id": "any"},
+                    "callbacks": callbacks},
         )
+        # print("response: ", response)
         chat_history.add_user_message(input_text)
-        chat_history.add_ai_message(response)
+        ai_response = response["tour_guide_response"]
+        image_url = response["image_url"]
+        chat_history.add_ai_message(ai_response)
         st.session_state["history"].append(f"You: {input_text}")
-        st.session_state["history"].append(f"AI: {response}")
-        st.write(response)
+        st.session_state["history"].append(f"AI: {ai_response}")
+        st.write(ai_response)
+        if image_url != "":
+            st.image(image_url)
 
         # generate audio response
-        stream_to_speakers(response)
+        stream_to_speakers(ai_response)
         st.audio("response.mp3", format="audio/mp3", autoplay=True)
 
     # for message in st.session_state["history"]:

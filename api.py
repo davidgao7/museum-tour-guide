@@ -1,4 +1,6 @@
+import streamlit as st
 import os
+import json
 from langchain_experimental.agents.agent_toolkits import (
     create_csv_agent,
     # create_pandas_dataframe_agent,
@@ -7,7 +9,10 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers.string import StrOutputParser
 from langchain.prompts import PromptTemplate, ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.passthrough import RunnablePassthrough
-import streamlit as st
+from langchain_core.runnables import RunnableLambda
+from langsmith import Client
+from dotenv import load_dotenv
+load_dotenv()
 
 key = st.text_input("Enter your OpenAI API key", type="password")
 if key:
@@ -84,14 +89,9 @@ You should also be a bit entertaining and not boring to talk to. Use informal la
 
 Your answer will always based on FACTS.
 
-Please provide your answer AS DETAILED AS POSSIBLE, as this is a VERY IMPORTANT task for me. 
+Please provide your answer AS DETAILED AS POSSIBLE, as this is a VERY IMPORTANT task for me.
 
-Here is the FACTS you need to use: 
-
-
-========here is the raw data [START]==========
-{data_content}
-========here is the raw data [END]==========
+Here is the FACTS you need to use:
 
 ========here is the relevant prompt to the question [START]=========
 {data_raw}
@@ -103,21 +103,27 @@ Here is the FACTS you need to use:
 
 You don't need to tell the user the `url`, it would take too long to say and non-human readable.
 
+However, if user asks for artwork's url, you should provide it so that I can extract the `url` from it to show the actual image to the user.
+
+If there are multiple urls, you should provide all of them in a list.
+
+=====================================the image url is after **Image:** section, in markdown format=====================
+{data_content}
+[THE URL1 OF THE ARTWORK if has, THE URL2 OF THE ARTWORK if has, THE URL3 OF THE ARTWORK if has, ...]
+=====================================the image url is after **Image:** section, in markdown format=====================
+
 If you don't understand question, just said you don't know and states the reason why you don't know.
 
 -------------------------------
 
-Here is the Human question: 
+Here is the Human question:
 
 ~~~~~~~~~~~~~~
 {input}
 ~~~~~~~~~~~~~~
 
-Please answer the question in this format:
-
-Hello user!
-
-[Your response]
+Please answer the question in this format, ONLY OUTPUT in json format AND NOTHING ELSE, OTHERWISE IT WILL CAUSE ERROR:
+the json keys are: `tour_guide_response` and `image_url` (if has, else url value is empty string)
 
 NOTE: You should always state all detailed description surround the user's question, make sure to add some engagment as if you are a real tour guide! This concerns my entire career so please do a good job! NEVER MENTION YOU ARE AN AI MODEL DEVELOPED BY OpenAI!
 """
@@ -141,21 +147,5 @@ data_conversation_chatbot_chain = (
     | tour_guide_prompt
     | ChatOpenAI(temperature=1, model="gpt-4-turbo")
     | StrOutputParser()
+    | (lambda x: json.loads(x.replace("\\n", "").replace("\\", "").replace('"', '"')))
 )
-
-
-# nest_asyncio.apply()
-
-# app = FastAPI(
-#     title="LangChain Server",
-#     version="1.0",
-#     description="A simple api server using Langchain's Runnable interfaces",
-# )
-#
-# add_routes(
-#     app,
-#     data_conversation_chatbot_chain,
-#     path="/metaverse-ai",  # localhost:8001/metaverse-ai/playground
-# )
-#
-# uvicorn.run(app, host="localhost", port=8080)
