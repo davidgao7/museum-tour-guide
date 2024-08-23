@@ -332,7 +332,7 @@ if not input_text:
 with st.chat_message("AI"):
     # streaming response
     with st.spinner("Thinking..."):
-        response = data_conversation_chatbot_chain.invoke(
+        response = data_conversation_chatbot_chain_history.invoke(
             {"input": input_text, "chat_history": st.session_state.chat_history},
             config={"configurable": {"session_id": "2"},
                     "callbacks": callbacks},
