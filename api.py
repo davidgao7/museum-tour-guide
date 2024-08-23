@@ -334,7 +334,7 @@ with st.chat_message("AI"):
     with st.spinner("Thinking..."):
         response = data_conversation_chatbot_chain.invoke(
             {"input": input_text, "chat_history": st.session_state.chat_history},
-            config={"configurable": {"session_id": "any"},
+            config={"configurable": {"session_id": "2"},
                     "callbacks": callbacks},
         )
         # print("response: ", response)
