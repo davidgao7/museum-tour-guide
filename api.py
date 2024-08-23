@@ -16,16 +16,19 @@ from langchain.callbacks import LangChainTracer
 from dotenv import load_dotenv
 
 load_dotenv()
-# enable tracing when debugging
-callbacks = [
-    LangChainTracer(
-        project_name="AI Voice Tour",
-        client=Client(
-            api_url=os.getenv("LANGCHAIN_ENDPOINT"),
-            api_key=os.getenv("LANGCHAIN_API_KEY"),
-        ),
-    )
-]
+# enable tracing when debugging locally
+if os.path.isfile(".env"):
+    callbacks = [
+        LangChainTracer(
+            project_name="AI Voice Tour",
+            client=Client(
+                api_url=os.getenv("LANGCHAIN_ENDPOINT"),
+                api_key=os.getenv("LANGCHAIN_API_KEY"),
+            ),
+        )
+    ]
+else:
+    callbacks = []
 
 
 key = st.text_input("Enter your OpenAI API key", type="password")
