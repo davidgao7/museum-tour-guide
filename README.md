@@ -8,6 +8,14 @@
 
 - Simply click the [url](https://hrz8bxkkzuzbgomqgrzt3s.streamlit.app/) on the top right to access the web interface
 - Enter your openai api key
+  - <details>
+        <summary>Just in case, here is how you can get your own openai api key:</summary>
+        <p>
+        - Go to [OpenAI Platform](https://platform.openai.com/settings/organization/general)
+        - [Here is an example tutorial on how to get your api key, credit to @lorenzozar](https://medium.com/@lorenzozar/how-to-get-your-own-openai-api-key-f4d44e60c327)
+        - Note: You need to add credit to your OpenAI account to use the API. You can add credit by visiting the [OpenAI billing dashboard](https://platform.openai.com/settings/organization/billing/overview)
+        </p>
+    </details>
 - There are two ways of interacting with the tour guide:
   - Text input
   - Voice input
