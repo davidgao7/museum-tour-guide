@@ -44,3 +44,16 @@
 ## App overview
 
 ![](App.png)
+
+---
+
+<center>It can also display example artwork if it exists in database</center>
+<center>You can also ask it to display certain artwork!</center>
+
+<p style="display: flex; justify-content: space-between;">
+    <img src="response-with-picture.png" style="width: 30%; box-sizing: border-box;" />
+    <img src="response-with-picture2.png" style="width: 30%; box-sizing: border-box;" />
+    <img src="picture-display.png" style="width: 30%; box-sizing: border-box;" />
+</p>
+
+Hope you have fun exploring the AI Museum! :)
