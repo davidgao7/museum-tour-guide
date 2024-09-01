@@ -41,7 +41,7 @@
 - [x] The tour guide is able to understand/remember the context of the conversation.
 - [x] Interrupt the tour guide at any time by clicking on the stop audio button
 
-## For developers 🧑‍💻
+## For developers who want to run it locally 🧑‍💻
 
 1. Always create a virtual environment before installing any dependencies
 
@@ -60,7 +60,10 @@ source [venv_name]/bin/activate
 # using current python:
 pyenv exec python
 
-5. run python file using current python:
+# 5. install dependencies
+pyenv exec pip install -r requirements.txt
+
+# 6. run python file using current python:
 pyenv exec python -m streamlit run api.py
 
 # or you can directly run the file using the current python executable path:
@@ -68,12 +71,9 @@ pyenv exec python -m streamlit run api.py
 path_to_virtual_env/bin/python -m streamlit run TTS/api.py 
 ```
 
-```
-
 ## App overview 🖼️
 
 ![](App.png)
-
 ---
 
 <center>It can also display example artwork if it exists in database</center>
