@@ -1,10 +1,10 @@
 # AI Museum voice tour guide
 
-## Description
+## Description 📜
 
 > This project is a voice tour guide for the AI Museum. The AI Museum is a virtual museum that showcases the history of AI and its applications. The voice tour guide provides information about the exhibits in the museum. The tour guide can be accessed through a web interface or a mobile app. The tour guide uses speech recognition and LLM to understand the user's queries and provide relevant information.
 
-## How to use
+## How to use 🛠️
 
 - Simply click the [url](https://hrz8bxkkzuzbgomqgrzt3s.streamlit.app/) on the top right to access the web interface
 - Enter your openai api key
@@ -41,7 +41,36 @@
 - [x] The tour guide is able to understand/remember the context of the conversation.
 - [x] Interrupt the tour guide at any time by clicking on the stop audio button
 
-## App overview
+## For developers 🧑‍💻
+
+1. Always create a virtual environment before installing any dependencies
+
+- `pyenv and venv for example`
+
+```bash
+# 1. install specific python version using `pyenv`
+pyenv install [python version]
+# 2. set the local python version 
+pyenv local [python version]
+# 3. create virtual environment with `venv`
+pyenv exec python -m venv [venv name]
+# 4. activate venv
+source [venv_name]/bin/activate
+
+# using current python:
+pyenv exec python
+
+5. run python file using current python:
+pyenv exec python -m streamlit run api.py
+
+# or you can directly run the file using the current python executable path:
+# for example:
+path_to_virtual_env/bin/python -m streamlit run TTS/api.py 
+```
+
+```
+
+## App overview 🖼️
 
 ![](App.png)
 
@@ -56,4 +85,6 @@
     <img src="picture-display.png" style="width: 30%; box-sizing: border-box;" />
 </p>
 
-Hope you have fun exploring the AI Museum! :)
+Hope you have fun exploring the AI Museum! :) 🎨🏛️
+
+Star this repo if you like it! 🌟
