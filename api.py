@@ -40,8 +40,13 @@ if os.path.isfile(".env"):
 else:
     callbacks = []
 
+st.title("Your AI Meseum Tour Guide 🎨🖼️🖌️")
 
-key = st.text_input("Enter your OpenAI API key", type="password")
+key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
+
+# check if key is valid
+if not key.startswith("sk-"):
+        st.warning("Please enter your OpenAI API key!", icon="⚠")
 if key:
     os.environ["OPENAI_API_KEY"] = key
     st.write("API key set successfully!")
