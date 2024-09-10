@@ -77,6 +77,7 @@ path_to_virtual_env/bin/python -m streamlit run TTS/api.py
 ---
 
 <center>Conversation memory</center>
+
 ![Conversation memory](content_memory.png)
 
 <center>It can also display example artwork if it exists in database</center>
