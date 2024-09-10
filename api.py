@@ -4,6 +4,7 @@ from langchain_community.chat_message_histories import (
     ChatMessageHistory,
     StreamlitChatMessageHistory,
 )
+from langchain.chains import ConversationChain
 from audiorecorder import audiorecorder
 import openai
 import time
@@ -13,10 +14,12 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain.callbacks import LangChainTracer
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder, PromptTemplate
+import langchain_core
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.output_parsers.string import StrOutputParser
 from langchain_core.runnables import RunnableLambda
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain.chains.conversation.memory import ConversationSummaryBufferMemory
 from langchain_core.runnables.passthrough import RunnablePassthrough
 from langchain_experimental.agents.agent_toolkits import (
     create_csv_agent,
@@ -24,6 +27,10 @@ from langchain_experimental.agents.agent_toolkits import (
 )
 from langchain_openai import ChatOpenAI
 from langsmith import Client
+from langchain_core.messages.ai import AIMessage
+from langchain_core.messages.human import HumanMessage
+
+import validators
 
 load_dotenv()
 # enable tracing when debugging locally
@@ -40,43 +47,55 @@ if os.path.isfile(".env"):
 else:
     callbacks = []
 
+
+store = {}
+
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
+
+def stream_data_output(stream_data):
+    for chunk in stream_data:
+        yield chunk
+        time.sleep(0.02)
+
+
+def stream_to_speakers(text: str) -> None:
+    """
+    give response to the user's input in audio
+
+    @param text: text to be converted to audio
+    """
+
+    start_time = time.time()
+
+    with openai.audio.speech.with_streaming_response.create(
+        model="tts-1",
+        voice="alloy",
+        response_format="mp3",
+        input=text,
+    ) as response:
+        print("saving response audio file  ...")
+        response.stream_to_file("response.mp3")
+
+        print(f"Done in {int((time.time() - start_time) * 1000)}ms.")
+
+
 st.title("Your AI Meseum Tour Guide 🎨🖼️🖌️")
 
 key = st.sidebar.text_input("Enter your OpenAI API key", type="password")
 
 # check if key is valid
 if not key.startswith("sk-"):
-        st.warning("Please enter your OpenAI API key!", icon="⚠")
+    st.warning("Please enter your OpenAI API key!", icon="⚠")
 if key:
     os.environ["OPENAI_API_KEY"] = key
     st.write("API key set successfully!")
 else:
     st.stop()
-
-# from dotenv import load_dotenv
-
-# from langchain.agents.agent_types import AgentType
-# from langchain.agents import Agent
-
-# from langchain.tools import BaseTool, tool, StructuredTool
-
-
-# from langchain_core.prompts.image import ImagePromptTemplate
-
-# from langchain_community.document_loaders.csv_loader import CSVLoader
-# from langchain.callbacks.base import BaseCallbackHandler
-# from langchain_community.chat_message_histories import ChatMessageHistory
-# from langchain.chains import ConversationChain
-# from langserve import add_routes
-# import uvicorn
-# from threading import Thread
-# from queue import Queue
-# import pandas as pd
-# from fastapi import FastAPI
-# import os
-# from langchain.tools import Tool
-
-# load_dotenv()
 
 
 # TODO: 1. time_it
@@ -128,10 +147,6 @@ Here is the FACTS you need to use:
 {data_raw}
 ========here is the relevant prompt to the question [END]=========
 
-========here is the history of the conversation========
-{chat_history}
-========here is the history of the conversation========
-
 You don't need to tell the user the `url`, it would take too long to say and non-human readable.
 
 However, if user asks for artwork's url, you should provide it so that I can extract the `url` from it to show the actual image to the user.
@@ -147,22 +162,21 @@ If you don't understand question, just said you don't know and states the reason
 
 -------------------------------
 
-Here is the Human question:
-
-~~~~~~~~~~~~~~
-{input}
-~~~~~~~~~~~~~~
-
-Please answer the question in this format, ONLY OUTPUT in json format AND NOTHING ELSE, OTHERWISE IT WILL CAUSE ERROR:
-the json keys are: `tour_guide_response` and `image_url` (if has, else url value is empty string)
+Human/User: {input}
 
 NOTE: You should always state all detailed description surround the user's question, make sure to add some engagment as if you are a real tour guide! This concerns my entire career so please do a good job! NEVER MENTION YOU ARE AN AI MODEL DEVELOPED BY OpenAI!
+
+DO NOT TELL USER WHAT TYPE OF DATA YOU ARE USING, JUST ANSWER THE QUESTION AS IF YOU ARE A REAL TOUR GUIDE!
+
+Please answer the question in this format, ONLY OUTPUT in json format AND NOTHING ELSE, OTHERWISE IT WILL CAUSE ERROR:
+the json keys are: `tour_guide_response` , `image_url` (if has, else url value is empty string; if has multiple, separate each url with semicolon) and `artwork_name` (if has, else artwork_name value is empty string; if has multiple, separate each name with semicolon).
+
+AI Tour Guide:
 """
 
 tour_guide_prompt = ChatPromptTemplate.from_messages(
     [
         ("system", tour_guide_template),
-        MessagesPlaceholder(variable_name="chat_history"),
         ("user", "{input}"),
     ]
 )
@@ -172,22 +186,74 @@ tour_guide_prompt = ChatPromptTemplate.from_messages(
 #                Final   Chain                                               #
 ##############################################################################
 
+# max_token_limit=40 - token limits needs transformers installed
+# memory = ConversationSummaryBufferMemory(
+#     llm=ChatOpenAI(model="gpt-4-turbo", temperature=0),
+#     memory_key="history",
+#     return_messages=True,
+# )
+# memory_runnable = ConversationChain(
+#     llm=ChatOpenAI(),
+#     memory=memory,
+#     prompt="""
+#         According to this information: {history}. Only use latest conversation.
+#
+#         Please answer the question in this format, ONLY OUTPUT in json format AND NOTHING ELSE, OTHERWISE IT WILL CAUSE ERROR:
+#                                         the json keys are: `tour_guide_response` , `image_url` (if has, else url value is empty string) and `artwork_name` (if has, else artwork_name value is empty string).
+#
+#         Question: question from user, from previous context, you need to find it
+#         Answer:
+#         """,
+# )
+
+
+# In this setup, save_to_memory ensures that memory
+# is updated with both the user's input and the AI's response after each run.
+def save_to_memory(chain, inputs, outputs):
+    input_str = str(inputs["input"])  # Ensure input is a string
+    output_str = str(outputs["response"])  # Ensure output is a string
+
+    # Save context to memory
+    chain.memory.save_context({"input": input_str}, {"response": output_str})
+
+
 data_conversation_chatbot_chain = (
-    RunnablePassthrough.assign(data_raw=meta_data_extract_chain)
-    | RunnablePassthrough.assign(data_content=lambda x: x["data_raw"]["output"])
+    ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """
+                Remember, the AI tour guide should always display each the artwork image url in the description if it has one!
+
+                Here is the chat history: {chat_history}
+
+                ===========================================
+
+                Here is the question from user: {input}
+                """,
+            )
+        ]
+    )
+    | meta_data_extract_chain
+    | RunnablePassthrough.assign(data_raw=lambda x: x["output"])
+    | RunnablePassthrough.assign(data_content=lambda x: x["data_raw"])
     | tour_guide_prompt
-    | ChatOpenAI(temperature=1, model="gpt-4-turbo")
+    | ChatOpenAI(model="gpt-4-turbo", temperature=0)
+    # | (lambda x: x["output"])
+    # | memory_runnable
     | JsonOutputParser()
 )
 
-
-streamlit_chat_history = StreamlitChatMessageHistory(key="chat_history")
+streamlit_chat_history = StreamlitChatMessageHistory(key="history")
 
 data_conversation_chatbot_chain_history = RunnableWithMessageHistory(
     data_conversation_chatbot_chain,
     lambda session_id: streamlit_chat_history,
     input_messages_key="input",
     history_messages_key="chat_history",
+    # memory=st.session_state.entity_memory,
+    # memory=memory,
+    # verbose=True,
 )
 
 # ================streamlit display================================
@@ -223,61 +289,27 @@ data_conversation_chatbot_chain_history = RunnableWithMessageHistory(
 #         return response
 #
 
-store = {}
-
-
-def get_session_history(session_id: str) -> BaseChatMessageHistory:
-    if session_id not in store:
-        store[session_id] = ChatMessageHistory()
-    return store[session_id]
-
-
-def stream_data_output(stream_data):
-    for chunk in stream_data:
-        yield chunk
-        time.sleep(0.02)
-
-
-def stream_to_speakers(text: str) -> None:
-    """
-    give response to the user's input in audio
-
-    @param text: text to be converted to audio
-    """
-
-    start_time = time.time()
-
-    with openai.audio.speech.with_streaming_response.create(
-        model="tts-1",
-        voice="alloy",
-        response_format="mp3",
-        input=text,
-    ) as response:
-        print("saving response audio file  ...")
-        response.stream_to_file("response.mp3")
-
-    print(f"Done in {int((time.time() - start_time) * 1000)}ms.")
-
-
-st.title("Your AI Tour Guide")
-
 
 initial_message = "Hi, I am your museum AI assistant. I can help you with any questions you have on museum, any questions on museum?"
 
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# if "content" not in st.session_state:
+#     st.session_state.content = []
 
-# for message in st.session_state.messages:
+# for message in st.session_state.content:
 #     with st.chat_message(message["role"]):
 #         if message["content"]:
 #             st.markdown(message["content"])
 
-if "image_url" not in st.session_state:
-    st.session_state["image_url"] = []
+# if "image_url" not in st.session_state:
+#     st.session_state["image_url"] = []
+
+# if "enity_memory" not in st.session_state:
+#     st.session_state.entity_memory.entity_store = {}
+#     st.session_state.entity_memory.buffer.clear()
 
 # Render current messages from StreamlitChatMessageHistory
-# for msg in streamlit_chat_history.messages:
+# for msg in streamlit_chat_history.content:
 #     if msg:
 #         st.chat_message(msg.type).write(msg.content)
 #
@@ -298,10 +330,19 @@ with audio_col:
         # To save audio to a file, use pydub export method:
         audio.export("user_response.mp3", format="mp3")
 
+# Render current messages from StreamlitChatMessageHistory
+# print("========================================")
+# print("type of streamlit_chat_history: ", type(streamlit_chat_history))
+# print("========================================")
+# for msg in streamlit_chat_history.content:
+#     print("msg: ", msg)
+#     print(type(msg))
+#     st.chat_message(msg.type).write(msg)
+
+
 with text_input_col:
     # input_text = st.chat_input("any questions on museum?")  # interact with openai
     input_text = st.chat_input("what do you want to know about museum?")
-    st.session_state.messages.append({"role": "user", "content": input_text})
 
 
 print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -318,8 +359,7 @@ if not input_text:
         print("I'm listening ...")
         st.stop()
 
-    input_text = client.audio.transcriptions.create(
-        model="whisper-1", file=audio_file)
+    input_text = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
 
     # delete audio file after use
     os.remove("user_response.mp3")
@@ -327,74 +367,90 @@ if not input_text:
     # only get str as input
     input_text = input_text.text
 
-    with st.chat_message("user"):
-        st.markdown(input_text)
 
-    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    print("input_text: ", input_text)
-    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+print("input_text: ", input_text)
+print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
+# Render current messages from StreamlitChatMessageHistory
+for msg in streamlit_chat_history.messages:
+    print("msg: ", msg)
+    print("type of msg: ", type(msg))
+    if (
+        type(msg) == langchain_core.messages.ai.AIMessage
+        or type(msg) == langchain_core.messages.human.HumanMessage
+    ):
+        st.chat_message(msg.type).write(msg.content)
+        print("========================================")
+
+with st.chat_message("user"):
+    st.write(input_text)
+    streamlit_chat_history.add_user_message(input_text)
+
 
 with st.chat_message("AI"):
     # streaming response
     with st.spinner("Thinking..."):
         response = data_conversation_chatbot_chain_history.invoke(
-            {"input": input_text, "chat_history": st.session_state.chat_history},
-            config={"configurable": {"session_id": "2"},
-                    "callbacks": callbacks},
+            {"input": input_text, "question": input_text},
+            {"configurable": {"session_id": "unused"}},
         )
-        # print("response: ", response)
+        print("=====================================")
+        print("response: ", response)
+        print("=====================================")
         ai_response = response["tour_guide_response"]
-        image_url = response["image_url"]
-        #
-        # if "history" not in st.session_state.keys():
-        #     st.session_state["history"] = []
-        # if "image_url" not in st.session_state.keys():
-        #     st.session_state["image_url"] = []
+        image_urls = response["image_url"].split(";")
+        artwork_names = response["artwork_name"].split(";")
 
-        # st.session_state["history"].append(f"You: {input_text}")
-        # st.session_state["history"].append(f"AI: {ai_response}")
-        # st.session_state["image_url"].append(image_url)
+        if "history" not in st.session_state.keys():
+            st.session_state["history"] = []
+        if "image_url" not in st.session_state.keys():
+            st.session_state["image_url"] = []
+
+        # write chat history to streamlit
+        streamlit_chat_history.add_ai_message(ai_response)
+        st.session_state["history"].append(ai_response)
+        print("\n=============================\n")
+        print("ai_response:\n", ai_response)
+        # streaming the output
+        st.write_stream(stream_data_output(ai_response))
+
+        for image_url, artwork_name in zip(image_urls, artwork_names):
+            print("image_url:\n", image_url)
+            st.session_state["image_url"].append(image_url)
+            print("artwork_name:\n", artwork_name)
+
+            if validators.url(image_url):
+                st.image(image_url, use_column_width=True, caption=artwork_name)
+
+        print("\n=============================\n")
 
         # generate audio response
         stream_to_speakers(ai_response)
         st.audio("response.mp3", format="audio/mp3", autoplay=True)
 
-if input_text:
-    st.session_state.messages.append(
-        {
-            "role": "user",
-            "content": input_text,
-        }
-    )
-
-if ai_response:
-    st.session_state.messages.append(
-        {
-            "role": "AI",
-            "content": ai_response,
-            "image_url": image_url if image_url else None,
-        }
-    )
+# if input_text:
+#     st.session_state.content.append(
+#         {
+#             "role": "user",
+#             "content": input_text,
+#         }
+#     )
+#
+# if ai_response:
+#     st.session_state.content.append(
+#         {
+#             "role": "AI",
+#             "content": ai_response,
+#             "image_url": image_url if image_url else None,
+#         }
+#     )
 
 # display chat history
 # NOTE: I don't think gpt will output exact same output everytime, even with temperature=0
-st.session_state.messages = list(
-    filter(lambda x: x["content"] is not None, st.session_state.messages)
-)
-
-print("%%%%%%%%%%st.session_state.messages%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-print(st.session_state.messages)
-print("%%%%%%%%%%st.session_state.messages%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-
-previous_dic = None
-for dic in st.session_state.messages:
-    if dic and dic != previous_dic:
-        with st.chat_message(dic["role"]):
-            st.markdown(dic["content"])
-        if "image_url" in dic.keys() and dic["image_url"]:
-            st.image(dic["image_url"])
-
-        previous_dic = dic
+# st.session_state.content = list(
+#     filter(lambda x: x["content"] is not None, st.session_state.content)
+# )
 
 # display chat history
 # st.write(st.session_state["history"])
