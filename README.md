@@ -40,6 +40,7 @@
 - [x] The tour guide can be accessed through a web interface, anywhere with a internet browser.
 - [x] The tour guide is able to understand/remember the context of the conversation.
 - [x] Interrupt the tour guide at any time by clicking on the stop audio button
+- [x] The tour guide can memorize the conversation and display it to the user
 
 ## For developers who want to run it locally 🧑‍💻
 
