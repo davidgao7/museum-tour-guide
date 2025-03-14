@@ -46,7 +46,20 @@
 
 1. Always create a virtual environment before installing any dependencies
 
-- `pyenv and venv for example`
+- python version: *3.12.3*
+
+- `pyenv and venv for example`, you can also use [uv](https://docs.astral.sh/uv/guides/integration/docker/#installing-requirements)(it's much easier and more powerful!)
+
+```bash
+cd /path/to/museum-tour-guide
+# z /path/to/museum-tour-guide for zoxide
+# create virtual env
+uv venv --python 3.12.3
+# install packages
+uv pip install -r requirements.txt
+# run application
+uv run api.py
+```
 
 ```bash
 # 1. install specific python version using `pyenv`
