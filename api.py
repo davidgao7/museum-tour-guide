@@ -114,6 +114,7 @@ meta_data_extract_chain = create_csv_agent(
     source_data,
     verbose=True,
     agent_type="openai-tools",
+    allow_dangerous_code=True
 )
 
 
